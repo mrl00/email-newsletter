@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse};
-use sqlx::PgConnection;
+use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -7,9 +7,17 @@ pub struct FormData {
     email: String,
 }
 
-pub async fn subscribe(
-    _form: web::Form<FormData>,
-    _connection: web::Data<PgConnection>,
-) -> HttpResponse {
+pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
+    sqlx::query!(
+        r#"
+        insert into subscriptions (tx_name, tx_email, dh_subscribed_at) values($1, $2, now());
+        "#,
+        form.name,
+        form.email
+    )
+    .execute(pool.get_ref())
+    .await
+    .expect("Failed to execute query");
+
     HttpResponse::Ok().finish()
 }

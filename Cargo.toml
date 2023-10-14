@@ -20,6 +20,7 @@ name = "email_newsletter"
 actix-web = "4"
 chrono = { version = "0.4.31", default-features = false, features = ["clock"] }
 config = "0.13.3"
+random_name_generator = "0.3.6"
 serde = { version = "1", features = ["derive"] }
 tokio = {version = "1", features = ["macros", "rt-multi-thread"]}
 uuid = { version = "1.4.1", features = ["v4"] }

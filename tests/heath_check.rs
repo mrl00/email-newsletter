@@ -4,6 +4,7 @@ use email_newsletter::{
     configuration::{self, get_configuration, DatabaseSettings},
     startup,
 };
+use rnglib::RNG;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 pub struct TestApp {
@@ -18,11 +19,13 @@ async fn spawn_app() -> TestApp {
 
     let address = format!("http:127.0.0.1:{}", port);
 
-    let configuration = get_configuration().expect("Failed to read configuration.");
+    let mut configuration = get_configuration().expect("Failed to read configuration.");
 
-    let connection_pool = PgPool::connect(&configuration.database.connection_string())
-        .await
-        .expect("Failed to connect to Database");
+    let rng = RNG::try_from(&rnglib::Language::Demonic).unwrap();
+    configuration.database.database_name = format!("db_test_{}", rng.generate_name());
+
+    //let connection_pool = PgPool::connect(&configuration.database.connection_string())
+    let connection_pool = configure_database(&configuration.database).await;
 
     let server = startup::run(listener, connection_pool.clone()).expect("Failed to bind address");
 
@@ -48,6 +51,11 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     let connection_pool = PgPool::connect(&config.connection_string())
         .await
         .expect("Failed to connect to Postgres.");
+
+    connection_pool
+        .execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+        .await
+        .expect("Failed to create uuid extension.");
 
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
@@ -79,13 +87,6 @@ async fn health_check_works() {
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     let app = spawn_app().await;
-    let config = configuration::get_configuration().expect("Failed to read configuration");
-    let connection_string = config.database.connection_string();
-
-    let connection = PgPool::connect(&connection_string)
-        .await
-        .expect("Failed to connect to Postgres.");
-
     let client = reqwest::Client::new();
 
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
@@ -100,8 +101,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     // Assert
     assert_eq!(200, response.status().as_u16());
 
-    let saved = sqlx::query!("SELECT  sk_subscription, tx_email, tx_name FROM subscriptions",)
-        .fetch_one(&connection)
+    let saved = sqlx::query!("SELECT sk_subscription, tx_email, tx_name FROM subscriptions",)
+        .fetch_one(&app.db_poll)
         .await
         .expect("Failed to fetch saved subscription");
 
@@ -112,7 +113,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         "DELETE FROM subscriptions WHERE sk_subscription=$1",
         saved.sk_subscription
     )
-    .execute(&connection)
+    .execute(&app.db_poll)
     .await
     .expect("Failed to delete data");
 }

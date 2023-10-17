@@ -8,6 +8,7 @@ use rnglib::RNG;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 pub struct TestApp {
+    pub db_name: String,
     pub address: String,
     pub db_poll: PgPool,
 }
@@ -22,7 +23,8 @@ async fn spawn_app() -> TestApp {
     let mut configuration = get_configuration().expect("Failed to read configuration.");
 
     let rng = RNG::try_from(&rnglib::Language::Demonic).unwrap();
-    configuration.database.database_name = format!("db_test_{}", rng.generate_name());
+    let db_name = format!("db_test_{}", rng.generate_name());
+    configuration.database.database_name = db_name.clone();
 
     //let connection_pool = PgPool::connect(&configuration.database.connection_string())
     let connection_pool = configure_database(&configuration.database).await;
@@ -32,6 +34,7 @@ async fn spawn_app() -> TestApp {
     let _ = tokio::spawn(server);
 
     TestApp {
+        db_name,
         address,
         db_poll: connection_pool,
     }

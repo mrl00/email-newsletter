@@ -713,6 +713,7 @@ dependencies = [
  "actix-web",
  "chrono",
  "config",
+ "log",
  "random_name_generator",
  "reqwest",
  "serde",

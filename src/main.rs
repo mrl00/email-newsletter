@@ -1,22 +1,17 @@
 use std::net::TcpListener;
 
-use email_newsletter::{configuration::get_configuration, startup};
+use email_newsletter::{
+    configuration::get_configuration,
+    startup,
+    telemetry::{get_subscriber, init_subscriber},
+};
 use sqlx::PgPool;
-use tracing::subscriber::set_global_default;
-use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Registry};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-    let formatting_layer = BunyanFormattingLayer::new("email_newsletter".into(), std::io::stdout);
+    let subscriber = get_subscriber("email_newsletter".into(), "info".into());
 
-    let subscriber = Registry::default()
-        .with(env_filter)
-        .with(JsonStorageLayer)
-        .with(formatting_layer);
-
-    set_global_default(subscriber).expect("Failed to set subscriber");
+    init_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to read configuration.");
 

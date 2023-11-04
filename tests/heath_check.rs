@@ -1,11 +1,27 @@
 use std::net::TcpListener;
 
 use email_newsletter::{
-    configuration::{self, get_configuration, DatabaseSettings},
+    configuration::{get_configuration, DatabaseSettings},
     startup,
+    telemetry::{get_subscriber, init_subscriber},
 };
+use once_cell::sync::Lazy;
 use rnglib::RNG;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let subscriber_name = "test".to_string();
+    let default_filter_level = "info".to_string();
+
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+        init_subscriber(subscriber);
+    } else {
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        init_subscriber(subscriber);
+    }
+});
 
 pub struct TestApp {
     pub db_name: String,
@@ -14,19 +30,18 @@ pub struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    Lazy::force(&TRACING);
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
-
     let port = listener.local_addr().unwrap().port();
-
     let address = format!("http:127.0.0.1:{}", port);
 
     let mut configuration = get_configuration().expect("Failed to read configuration.");
 
     let rng = RNG::try_from(&rnglib::Language::Demonic).unwrap();
-    let db_name = format!("db_test_{}", rng.generate_name());
+    let db_name = format!("db_test_{}", rng.generate_name().to_lowercase());
     configuration.database.database_name = db_name.clone();
 
-    //let connection_pool = PgPool::connect(&configuration.database.connection_string())
     let connection_pool = configure_database(&configuration.database).await;
 
     let server = startup::run(listener, connection_pool.clone()).expect("Failed to bind address");
@@ -42,16 +57,17 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut connection = PgConnection::connect(&config.connection_without_db_string())
-        .await
-        .expect("Failed to connect to postgres");
+    let mut connection =
+        PgConnection::connect(&config.connection_without_db_string().expose_secret())
+            .await
+            .expect("Failed to connect to postgres");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .await
         .expect("Failed to create database");
 
-    let connection_pool = PgPool::connect(&config.connection_string())
+    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres.");
 

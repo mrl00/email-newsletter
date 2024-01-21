@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        insert into subscriptions (tx_name, tx_email, dh_subscribed_at) values($1, $2, now());\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dce0fe18e81451a419146431e44ac9ca5a40b5cc09085856f8f493ff92845e4f"
+}

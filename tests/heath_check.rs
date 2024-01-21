@@ -39,7 +39,7 @@ async fn spawn_app() -> TestApp {
     let mut configuration = get_configuration().expect("Failed to read configuration.");
 
     let rng = RNG::try_from(&rnglib::Language::Demonic).unwrap();
-    let db_name = format!("db_test_{}", rng.generate_name());
+    let db_name = format!("db_test_{}", rng.generate_name().to_lowercase());
     configuration.database.database_name = db_name.clone();
 
     let connection_pool = configure_database(&configuration.database).await;

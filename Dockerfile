@@ -28,11 +28,12 @@ RUN cargo build --release --bin email_newsletter
 
 
 #runtime
-FROM debian:bullseye-slim AS runtime
+FROM debian:bookworm-slim AS runtime
 
 WORKDIR /app
 
 RUN apt-get update -y \
+  && apt-get install -y lld clang libc6 \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && apt-get autoremove -y \
   && apt-get clean -y \

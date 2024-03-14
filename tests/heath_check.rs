@@ -7,7 +7,6 @@ use email_newsletter::{
 };
 use once_cell::sync::Lazy;
 use rnglib::RNG;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -46,7 +45,7 @@ async fn spawn_app() -> TestApp {
 
     let server = startup::run(listener, connection_pool.clone()).expect("Failed to bind address");
 
-    let _ = tokio::spawn(server);
+    let _a = tokio::spawn(server);
 
     TestApp {
         db_name,
@@ -57,17 +56,16 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut connection =
-        PgConnection::connect(&config.connection_without_db_string().expose_secret())
-            .await
-            .expect("Failed to connect to postgres");
+    let mut connection = PgConnection::connect_with(&config.without_db())
+        .await
+        .expect("Failed to connect to postgres");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .await
         .expect("Failed to create database");
 
-    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
+    let connection_pool = PgPool::connect_with(config.with_db())
         .await
         .expect("Failed to connect to Postgres.");
 

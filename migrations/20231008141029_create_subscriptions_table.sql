@@ -1,4 +1,6 @@
 -- Add migration script here
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE
   subscriptions (
     sk_subscription UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),

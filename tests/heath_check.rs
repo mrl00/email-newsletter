@@ -1,7 +1,11 @@
 use std::net::TcpListener;
 
+use once_cell::sync::Lazy;
+use rnglib::RNG;
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use email_newsletter::{
     configuration::{get_configuration, DatabaseSettings},
+    configuration::{DatabaseSettings, get_configuration},
     startup,
     telemetry::{get_subscriber, init_subscriber},
 };

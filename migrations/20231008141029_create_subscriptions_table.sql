@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS subscriptions(
   tx_email VARCHAR(64) UNIQUE NOT NULL,
   tx_name VARCHAR(128) NOT NULL,
   ts_created_at TIMESTAMP NOT NULL DEFAULT now(),
-  dh_subscribed_at TIMESTAMP NOT NULL DEFAULT now()
+  ts_subscribed_at TIMESTAMP NOT NULL DEFAULT now()
 );

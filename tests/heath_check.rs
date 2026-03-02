@@ -110,7 +110,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
     let response = client
-        .post(&format!("{}/subscriptions", &app.address))
+        .post(format!("{}/subscriptions", &app.address))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -120,7 +120,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     // Assert
     assert_eq!(200, response.status().as_u16());
 
-    let saved = sqlx::query!("SELECT sk_subscription, tx_email, tx_name FROM subscriptions",)
+    let saved = sqlx::query!("SELECT pk_subscription, tx_email, tx_name FROM subscriptions",)
         .fetch_one(&app.db_poll)
         .await
         .expect("Failed to fetch saved subscription");
@@ -129,8 +129,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     assert_eq!(saved.tx_name, "le guin");
 
     let _ = sqlx::query!(
-        "DELETE FROM subscriptions WHERE sk_subscription=$1",
-        saved.sk_subscription
+        "DELETE FROM subscriptions WHERE pk_subscription=$1",
+        saved.pk_subscription
     )
     .execute(&app.db_poll)
     .await
@@ -149,7 +149,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 
     for (invalid_doby, error_message) in test_cases {
         let response = client
-            .post(&format!("{}/subscriptions", &app.address))
+            .post(format!("{}/subscriptions", &app.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(invalid_doby)
             .send()

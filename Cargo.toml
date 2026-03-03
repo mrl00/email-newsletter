@@ -31,7 +31,7 @@ tracing-subscriber = { version = "0.3.22", features = [
   "registry",
   "env-filter",
 ] }
-uuid = { version = "1.21.0", features = ["v4", "v7"] }
+uuid = { version = "1.21.0", features = ["v7"] }
 unicode-segmentation = "1.12.0"
 
 

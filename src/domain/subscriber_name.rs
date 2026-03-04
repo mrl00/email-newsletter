@@ -32,9 +32,3 @@ impl AsMut<str> for SubscriberName {
         self.0.as_mut()
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewSubscriber {
-    pub email: String,
-    pub name: SubscriberName,
-}
